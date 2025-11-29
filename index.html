@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Education System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #2563eb; --dark: #0f172a; --bg: #f1f5f9; --white: #ffffff; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* --- NAVBAR --- */
+    .navbar { background: var(--white); border-bottom: 1px solid #e2e8f0; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.03); z-index: 10; }
+    .nav-left { display: flex; align-items: center; gap: 20px; }
+    .nav-title { font-size: 20px; font-weight: 700; color: var(--dark); display: flex; align-items: center; gap: 10px; }
+    .home-btn { display: none; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; align-items: center; gap: 8px; transition: 0.2s; }
+    .home-btn:hover { background: #1d4ed8; }
+    .user-section { display: flex; align-items: center; gap: 15px; font-size: 14px; color: #64748b; }
+    .logout-link { color: #ef4444; cursor: pointer; font-weight: 600; text-decoration: none; }
+
+    /* --- AUTH SCREEN --- */
+    #authContainer { flex: 1; display: flex; justify-content: center; align-items: center; overflow-y: auto; }
+    .auth-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 360px; text-align: center; }
+    .auth-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; outline: none; }
+    .main-btn { width: 100%; padding: 12px; background: var(--dark); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; }
+    .status-msg { margin-top: 15px; font-size: 13px; min-height: 20px; }
+    .err { color: #ef4444; } .ok { color: #10b981; }
+
+    /* --- DASHBOARD GRID --- */
+    #dashboardContainer { flex: 1; padding: 40px; overflow-y: auto; display: none; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
+    .app-card { background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; transition: 0.3s; cursor: pointer; text-align: left; display: flex; align-items: flex-start; gap: 20px; position: relative; overflow: hidden; }
+    .app-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.06); border-color: var(--primary); }
+    .app-icon { width: 60px; height: 60px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; flex-shrink: 0; }
+    .app-info h3 { margin: 0 0 5px 0; font-size: 18px; color: var(--dark); }
+    .app-info p { margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; }
+    .click-hint { position: absolute; bottom: 20px; right: 20px; opacity: 0; transition: 0.2s; color: var(--primary); font-size: 20px; }
+    .app-card:hover .click-hint { opacity: 1; right: 30px; }
+
+    /* --- IFRAME CONTAINER --- */
+    #appContainer { flex: 1; display: none; position: relative; background: white; }
+    iframe { width: 100%; height: 100%; border: none; }
+    
+    /* LOADER */
+    #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 50; display: none; justify-content: center; align-items: center; flex-direction: column; }
+    .spin { width: 35px; height: 35px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: s 1s infinite linear; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader"><div class="spin"></div><p id="loadText" style="margin-top:10px; color:#64748b;">Loading...</p></div>
+
+  <!-- NAVIGATION -->
+  <nav class="navbar" id="navBar" style="display:none;">
+    <div class="nav-left">
+      <div class="nav-title"><i class="fa-solid fa-layer-group" style="color:var(--primary);"></i> Smart Education System</div>
+      <button class="home-btn" id="btnHome" onclick="goHome()"><i class="fa-solid fa-house"></i> Dashboard Home</button>
+    </div>
+    <div class="user-section">
+      <span id="userEmailDisplay">user@email.com</span>
+      <span style="color:#cbd5e1;">|</span>
+      <a href="#" class="logout-link" onclick="doLogout()">Logout</a>
+    </div>
+  </nav>
+
+  <!-- AUTH VIEW -->
+  <div id="authContainer">
+    <!-- Login -->
+    <div class="auth-box" id="boxLogin">
+      <h2>System Login</h2>
+      <input type="email" id="lEmail" class="auth-input" placeholder="Email Address">
+      <input type="password" id="lPass" class="auth-input" placeholder="Password">
+      <button class="main-btn" onclick="auth('login')">Enter System</button>
+      <div class="status-msg" id="lMsg"></div>
+      <p style="font-size:13px; cursor:pointer; color:#64748b;" onclick="toggleAuth('signup')">Create New Account</p>
+    </div>
+    <!-- Signup -->
+    <div class="auth-box" id="boxSignup" style="display:none;">
+      <h2>Register</h2>
+      <input type="email" id="sEmail" class="auth-input" placeholder="Email">
+      <input type="password" id="sPass" class="auth-input" placeholder="Password (Min 8)">
+      <div id="verifySection" style="display:none; border-top:1px solid #eee; margin-top:10px; padding-top:10px;">
+        <input type="text" id="sCode" class="auth-input" placeholder="Verification Code">
+        <button class="main-btn" style="background:#10b981;" onclick="auth('signup')">Verify & Login</button>
+      </div>
+      <button class="main-btn" id="btnCode" style="background:#64748b;" onclick="auth('sendCode')">Send Code</button>
+      <div class="status-msg" id="sMsg"></div>
+      <p style="font-size:13px; cursor:pointer; color:#64748b;" onclick="toggleAuth('login')">Back to Login</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboardContainer">
+    <h2 style="margin-bottom:30px; color:var(--dark);">Available Applications</h2>
+    <div class="grid" id="appsGrid">
+      <!-- App Card 1 -->
+      <div class="app-card" onclick="launchApp('smart_result')">
+        <div class="app-icon" style="background:#3b82f6;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="app-info">
+          <h3>Smart Institute Result</h3>
+          <p>Complete marks entry and result generation system.</p>
+        </div>
+        <div class="click-hint"><i class="fa-solid fa-circle-arrow-right"></i></div>
+      </div>
+
+      <!-- App Card 2 -->
+      <div class="app-card" onclick="launchApp('app_2')">
+        <div class="app-icon" style="background:#10b981;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="app-info">
+          <h3>Smart Online Class Result System</h3>
+          <p>Here you can generate Class Result Only!</p>
+        </div>
+        <div class="click-hint"><i class="fa-solid fa-circle-arrow-right"></i></div>
+      </div>
+      <!-- App Card 3 -->
+      <div class="app-card" onclick="launchApp('app_3')">
+        <div class="app-icon" style="background:#10b981;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="app-info">
+          <h3>Smart Online Result Options</h3>
+          <p>Here you get generate complete institute result as Subject Wise, Class Wise and Student Wise.</p>
+        </div>
+        <div class="click-hint"><i class="fa-solid fa-circle-arrow-right"></i></div>
+      </div>
+       <!-- App Card 4 -->
+      <div class="app-card" onclick="launchApp('app_4')">
+        <div class="app-icon" style="background:#10b981;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="app-info">
+          <h3>سمارٹ اون لائن رزلٹ آپشنز</h3>
+          <p>اس میں آپ جماعت ، طالب علم اور مضمون کے حساب سے اکٹھا رزلٹ حاصل کر سکتےہیں۔</p>
+        </div>
+        <div class="click-hint"><i class="fa-solid fa-circle-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP VIEW (IFRAME) -->
+  <div id="appContainer">
+    <iframe id="appFrame" src=""></iframe>
+  </div>
+
+<script>
+  // ==========================================
+  // PASTE YOUR NEW CODE.GS WEB APP URL HERE
+  // ==========================================
+  const HUB_URL = "https://script.google.com/macros/s/AKfycbxHQEyVqm9qsxIlFzsGiUw03mTt_SW0-s6xyP8An31jNNc-knBLm4-xuAP63u2lpQluhw/exec"; 
+
+  let currentUser = null;
+
+  window.onload = () => {
+    const saved = localStorage.getItem('ses_user');
+    if(saved) {
+      try { currentUser = JSON.parse(saved); checkSession(); } 
+      catch(e) { localStorage.removeItem('ses_user'); }
+    }
+  };
+
+  function toggleAuth(view) {
+    document.getElementById('boxLogin').style.display = view==='login'?'block':'none';
+    document.getElementById('boxSignup').style.display = view==='signup'?'block':'none';
+    clearMsg();
+  }
+
+  function loading(show, txt="Processing...") {
+    document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    document.getElementById('loadText').innerText = txt;
+  }
+
+  function msg(type, txt, isErr) {
+    const el = document.getElementById(type==='login'?'lMsg':'sMsg');
+    el.innerText = txt;
+    el.className = 'status-msg ' + (isErr ? 'err' : 'ok');
+  }
+  function clearMsg(){ document.getElementById('lMsg').innerText=''; document.getElementById('sMsg').innerText=''; }
+
+  // --- AUTH ---
+  function auth(action) {
+    const isLogin = action === 'login';
+    const email = document.getElementById(isLogin?'lEmail':'sEmail').value;
+    const pass = document.getElementById(isLogin?'lPass':'sPass').value;
+
+    if(action !== 'sendCode' && (!email || !pass)) return msg(isLogin?'login':'signup', "Fill all fields", true);
+
+    let payload = { action, email, password: pass };
+    if(action === 'signup') {
+      payload.code = document.getElementById('sCode').value;
+      if(!payload.code) return msg('signup', "Enter Code", true);
+    }
+
+    loading(true);
+    fetch(HUB_URL, { method: "POST", body: JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(res => {
+      loading(false);
+      if(res.ok) {
+        if(action === 'sendCode') {
+          document.getElementById('btnCode').style.display='none';
+          document.getElementById('verifySection').style.display='block';
+          msg('signup', "Code Sent!", false);
+        } else {
+          // Login Success
+          currentUser = { email, pass };
+          localStorage.setItem('ses_user', JSON.stringify(currentUser));
+          enterSystem();
+        }
+      } else {
+        msg(isLogin?'login':'signup', res.error, true);
+      }
+    })
+    .catch(e => { loading(false); alert("Connection Failed"); });
+  }
+
+  function checkSession() {
+    loading(true, "Verifying Session...");
+    fetch(HUB_URL, { method:"POST", body:JSON.stringify({ action:'login', email: currentUser.email, password: currentUser.pass }) })
+    .then(r => r.json())
+    .then(res => {
+      loading(false);
+      if(res.ok) enterSystem(); else doLogout();
+    })
+    .catch(()=> loading(false));
+  }
+
+  function enterSystem() {
+    document.getElementById('authContainer').style.display='none';
+    document.getElementById('navBar').style.display='flex';
+    document.getElementById('dashboardContainer').style.display='block';
+    document.getElementById('userEmailDisplay').innerText = currentUser.email;
+  }
+
+  function doLogout() {
+    localStorage.removeItem('ses_user');
+    location.reload();
+  }
+
+  // --- APP LAUNCHER ---
+  function launchApp(appId) {
+    loading(true, "Launching Application...");
+    fetch(HUB_URL, { 
+      method:"POST", 
+      body:JSON.stringify({ action:'getAppLink', email: currentUser.email, password: currentUser.pass, appId: appId }) 
+    })
+    .then(r => r.json())
+    .then(res => {
+      loading(false);
+      if(res.ok && res.url) {
+        // Switch to Iframe View
+        document.getElementById('dashboardContainer').style.display='none';
+        document.getElementById('appContainer').style.display='block';
+        document.getElementById('btnHome').style.display='flex'; // Show Home Button
+        
+        // Load URL
+        const frame = document.getElementById('appFrame');
+        frame.src = res.url;
+      } else {
+        alert(res.error || "Launch Failed");
+      }
+    })
+    .catch(e => { loading(false); alert("Network Error"); });
+  }
+
+  // --- GO HOME LOGIC ---
+  function goHome() {
+    // Hide App, Show Dashboard
+    document.getElementById('appContainer').style.display='none';
+    document.getElementById('dashboardContainer').style.display='block';
+    document.getElementById('btnHome').style.display='none'; // Hide Home Button
+    
+    // Optional: Unload iframe to stop it using memory?
+    // document.getElementById('appFrame').src = ""; 
+    // Keeping it loaded allows switching back quickly. Your choice.
+  }
+
+</script>
+</body>
+</html>
