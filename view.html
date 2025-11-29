@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Education System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Smooth scrolling for sidebar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        
+        /* Active button state styling */
+        .nav-item.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-right: 3px solid #2563eb;
+        }
+        
+        /* Iframe container to ensure it fits perfectly */
+        .iframe-wrapper {
+            width: 100%;
+            height: calc(100vh - 64px); /* Subtract header height */
+            background-color: white;
+            position: relative;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+
+    <!-- SIDEBAR (Desktop) -->
+    <aside class="w-72 bg-white border-r border-gray-200 hidden md:flex flex-col z-20 shadow-md">
+        <!-- Logo Area -->
+        <div class="h-16 flex items-center px-6 border-b border-gray-100 bg-blue-600">
+            <i class="fa-solid fa-graduation-cap text-white text-xl mr-3"></i>
+            <span class="text-lg font-bold text-white tracking-wide">EduSystem</span>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="flex-1 overflow-y-auto custom-scroll py-4" id="sidebar-menu">
+            <!-- Menu items will be injected here by JavaScript -->
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">A</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">Admin User</p>
+                    <p class="text-xs text-gray-500 truncate">admin@edusystem.com</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        <!-- HEADER (Mobile & Desktop) -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 shadow-sm z-10">
+            <div class="flex items-center gap-4">
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                
+                <h1 id="page-title" class="text-xl font-semibold text-gray-800 truncate">Dashboard</h1>
+                
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="hidden ml-4">
+                    <div class="loader"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="refreshIframe()" class="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="Refresh Page">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <a id="external-link-btn" href="#" target="_blank" class="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                    <span>Open in New Tab</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- IFRAME AREA -->
+        <main class="flex-1 relative bg-gray-50">
+            <div class="iframe-wrapper">
+                <!-- Placeholder when no URL is loaded -->
+                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-gray-50">
+                    <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-layer-group text-3xl text-blue-500"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Select a Module</h2>
+                    <p class="text-gray-500">Choose a tool from the sidebar to view it here.</p>
+                </div>
+
+                <!-- The Actual Iframe -->
+                <iframe id="content-frame" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation" src=""></iframe>
+            </div>
+        </main>
+    </div>
+
+    <!-- MOBILE OVERLAY MENU -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-40 hidden transition-opacity" aria-hidden="true"></div>
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-xl flex flex-col">
+        <div class="h-16 flex items-center justify-between px-6 border-b bg-blue-600 text-white">
+            <span class="font-bold text-lg">Menu</span>
+            <button id="close-mobile-menu" class="p-1 hover:bg-blue-700 rounded"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto py-4" id="mobile-menu-container">
+            <!-- Mobile items injected here -->
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // CONFIGURATION AREA - ADD YOUR LINKS HERE
+        // ==========================================
+        const menuItems = [
+            {
+                name: "Smart Result View",
+                icon: "fa-chart-pie",  // FontAwesome class
+                url: "https://script.google.com/macros/s/AKfycbxcujHT0aZ6meTg3t_Bmmr79cMjjsBRa0Q66FAZUkl-i31Am4xNgZcBw4kpvPagYkNE/exec"
+            },
+            {
+                name: "Wikipedia (Example)",
+                icon: "fa-book",
+                url: "https://www.wikipedia.org/"
+            },
+            {
+                name: "Calculator",
+                icon: "fa-calculator",
+                url: "https://www.desmos.com/scientific"
+            },
+            // DUPLICATE THIS BLOCK TO ADD MORE
+            // {
+            //     name: "Your New Page Name",
+            //     icon: "fa-solid fa-link",
+            //     url: "https://your-url-here.com"
+            // },
+        ];
+        // ==========================================
+
+
+        // DOM Elements
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        const mobileMenuContainer = document.getElementById('mobile-menu-container');
+        const contentFrame = document.getElementById('content-frame');
+        const emptyState = document.getElementById('empty-state');
+        const pageTitle = document.getElementById('page-title');
+        const externalLinkBtn = document.getElementById('external-link-btn');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Mobile Menu Elements
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeMobileBtn = document.getElementById('close-mobile-menu');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+
+        // Initialize System
+        function init() {
+            renderMenu(sidebarMenu, false);
+            renderMenu(mobileMenuContainer, true);
+            
+            // Auto-load the first item if exists
+            if (menuItems.length > 0) {
+                loadView(0);
+            }
+        }
+
+        // Render Menu Items
+        function renderMenu(container, isMobile) {
+            container.innerHTML = ''; // Clear existing
+            
+            menuItems.forEach((item, index) => {
+                const btn = document.createElement('button');
+                // Styling
+                let classes = "w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-all text-left border-r-0 border-transparent nav-item-btn";
+                if(isMobile) classes = "w-full flex items-center gap-3 px-6 py-4 text-sm font-medium text-gray-700 hover:bg-gray-100 border-l-4 border-transparent";
+                
+                btn.className = classes;
+                btn.dataset.index = index;
+                
+                btn.innerHTML = `
+                    <i class="fa-solid ${item.icon} w-5 text-center ${isMobile ? 'text-gray-400' : 'text-gray-400 group-hover:text-blue-500'}"></i>
+                    <span>${item.name}</span>
+                `;
+                
+                btn.onclick = () => {
+                    loadView(index);
+                    if(isMobile) toggleMobileMenu(false);
+                };
+                
+                container.appendChild(btn);
+            });
+        }
+
+        // Load Content into Iframe
+        function loadView(index) {
+            const item = menuItems[index];
+            if (!item) return;
+
+            // Update Active State in UI
+            document.querySelectorAll('.nav-item-btn').forEach(btn => {
+                if (btn.classList.contains('border-r-3')) { // Desktop active style removal
+                     btn.classList.remove('bg-blue-50', 'text-blue-600', 'border-r-3', 'border-blue-600');
+                     btn.classList.add('text-gray-600');
+                }
+                // Mobile active style removal could be added here
+            });
+
+            // Highlight current (Simple approach: highlight all buttons with this index)
+            document.querySelectorAll(`button[data-index="${index}"]`).forEach(btn => {
+                if(btn.parentElement.id === 'sidebar-menu') {
+                    btn.classList.remove('text-gray-600');
+                    btn.classList.add('bg-blue-50', 'text-blue-600', 'border-r-3', 'border-blue-600'); // Add border-right
+                    btn.style.borderRight = "3px solid #2563eb";
+                }
+            });
+
+            // Update Header
+            pageTitle.textContent = item.name;
+            externalLinkBtn.href = item.url;
+            
+            // Show Loading
+            loadingIndicator.classList.remove('hidden');
+
+            // Handle Iframe
+            emptyState.classList.add('hidden');
+            contentFrame.classList.remove('hidden');
+            
+            // Prevent refreshing if clicking same link, unless it's empty
+            if (contentFrame.src !== item.url) {
+                contentFrame.src = item.url;
+            } else {
+                loadingIndicator.classList.add('hidden');
+            }
+
+            // Hide loader after a delay (since we can't always detect iframe onload perfectly due to CORS)
+            contentFrame.onload = () => {
+                loadingIndicator.classList.add('hidden');
+            };
+            // Fallback to hide loader if onload doesn't fire (common with some script blockers)
+            setTimeout(() => { loadingIndicator.classList.add('hidden'); }, 2000);
+        }
+
+        // Refresh Iframe
+        window.refreshIframe = function() {
+            if (contentFrame.src) {
+                loadingIndicator.classList.remove('hidden');
+                contentFrame.src = contentFrame.src;
+            }
+        };
+
+        // Mobile Menu Toggles
+        function toggleMobileMenu(show) {
+            if (show) {
+                mobileOverlay.classList.remove('hidden');
+                mobileSidebar.classList.remove('-translate-x-full');
+            } else {
+                mobileSidebar.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    mobileOverlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        mobileMenuBtn.addEventListener('click', () => toggleMobileMenu(true));
+        closeMobileBtn.addEventListener('click', () => toggleMobileMenu(false));
+        mobileOverlay.addEventListener('click', () => toggleMobileMenu(false));
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>
